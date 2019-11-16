@@ -130,7 +130,7 @@ class UserFragment : Fragment(), Injectable {
     private fun initRepoList() {
         lifecycleScope.launchWhenStarted {
             userViewModel.repositories.collect {
-                adapter.submitList(it.dataOrNull())
+                adapter.submitList(it.data)
             }
         }
     }

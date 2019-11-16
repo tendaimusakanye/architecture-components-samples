@@ -21,6 +21,7 @@ import com.android.example.github.di.GithubStore
 import com.android.example.github.repository.RepoRepository
 import com.android.example.github.repository.UserRepository
 import com.android.example.github.testing.OpenForTesting
+import com.android.example.github.util.asResourceFlow
 import com.nytimes.android.external.store4.StoreRequest
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.asFlow
@@ -40,14 +41,14 @@ class UserViewModel2
         } else {
             githubStore.userRepositoryStore.stream(StoreRequest.cached(it, refresh = true))
         }
-    }
+    }.asResourceFlow()
     val user = _login.asFlow().flatMapLatest {
         if (it == null) {
             flowOf()
         } else {
             githubStore.userStore.stream(StoreRequest.cached(it, refresh = true))
         }
-    }
+    }.asResourceFlow()
 
     fun setLogin(login: String?) {
         if (_login.valueOrNull != login) {
