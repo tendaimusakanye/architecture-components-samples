@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.android.example.github.ui.repo.RepoViewModel
 import com.android.example.github.ui.search.SearchViewModel
 import com.android.example.github.ui.user.UserViewModel
+import com.android.example.github.ui.user.UserViewModel2
 import com.android.example.github.viewmodel.GithubViewModelFactory
 
 import dagger.Binds
@@ -35,6 +36,11 @@ abstract class ViewModelModule {
     @IntoMap
     @ViewModelKey(UserViewModel::class)
     abstract fun bindUserViewModel(userViewModel: UserViewModel): ViewModel
+
+    @Binds
+    @IntoMap
+    @ViewModelKey(UserViewModel2::class)
+    abstract fun bindUserViewModel2(userViewModel: UserViewModel2): ViewModel
 
     @Binds
     @IntoMap

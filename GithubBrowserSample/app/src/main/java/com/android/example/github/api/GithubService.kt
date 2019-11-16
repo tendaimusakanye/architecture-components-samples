@@ -32,8 +32,14 @@ interface GithubService {
     @GET("users/{login}")
     fun getUser(@Path("login") login: String): LiveData<ApiResponse<User>>
 
+    @GET("users/{login}")
+    suspend fun getUserSuspend(@Path("login") login: String): User
+
     @GET("users/{login}/repos")
     fun getRepos(@Path("login") login: String): LiveData<ApiResponse<List<Repo>>>
+
+    @GET("users/{login}/repos")
+    suspend fun getReposSuspend(@Path("login") login: String): List<Repo>
 
     @GET("repos/{owner}/{name}")
     fun getRepo(

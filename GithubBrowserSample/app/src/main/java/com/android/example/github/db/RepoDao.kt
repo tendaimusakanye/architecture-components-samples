@@ -27,6 +27,7 @@ import com.android.example.github.testing.OpenForTesting
 import com.android.example.github.vo.Contributor
 import com.android.example.github.vo.Repo
 import com.android.example.github.vo.RepoSearchResult
+import kotlinx.coroutines.flow.Flow
 import java.util.Collections
 
 /**
@@ -44,6 +45,9 @@ abstract class RepoDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract fun insertRepos(repositories: List<Repo>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertReposSuspend(repositories: List<Repo>)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     abstract fun createRepoIfNotExists(repo: Repo): Long
@@ -66,6 +70,14 @@ abstract class RepoDao {
         ORDER BY stars DESC"""
     )
     abstract fun loadRepositories(owner: String): LiveData<List<Repo>>
+
+    @Query(
+        """
+        SELECT * FROM Repo
+        WHERE owner_login = :owner
+        ORDER BY stars DESC"""
+    )
+    abstract fun loadRepositoriesFlow(owner: String): Flow<List<Repo>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract fun insert(result: RepoSearchResult)

@@ -30,6 +30,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.transition.TransitionInflater
@@ -46,6 +47,8 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @OpenForTesting
@@ -58,7 +61,7 @@ class UserFragment : Fragment(), Injectable {
     var binding by autoCleared<UserFragmentBinding>()
     var dataBindingComponent: DataBindingComponent = FragmentDataBindingComponent(this)
 
-    private val userViewModel: UserViewModel by viewModels {
+    private val userViewModel: UserViewModel2 by viewModels {
         viewModelFactory
     }
     private val params by navArgs<UserFragmentArgs>()
@@ -106,8 +109,11 @@ class UserFragment : Fragment(), Injectable {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         userViewModel.setLogin(params.login)
         binding.args = params
-
-        binding.user = userViewModel.user
+        lifecycleScope.launchWhenStarted {
+            userViewModel.user.collect {
+                binding.user = it
+            }
+        }
         binding.setLifecycleOwner(viewLifecycleOwner)
         val rvAdapter = RepoListAdapter(
             dataBindingComponent = dataBindingComponent,
@@ -122,9 +128,11 @@ class UserFragment : Fragment(), Injectable {
     }
 
     private fun initRepoList() {
-        userViewModel.repositories.observe(viewLifecycleOwner, Observer { repos ->
-            adapter.submitList(repos?.data)
-        })
+        lifecycleScope.launchWhenStarted {
+            userViewModel.repositories.collect {
+                adapter.submitList(it.dataOrNull())
+            }
+        }
     }
 
     /**

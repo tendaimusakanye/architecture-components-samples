@@ -22,6 +22,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.android.example.github.vo.User
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Interface for database access for User related operations.
@@ -31,6 +32,12 @@ interface UserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(user: User)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSuspend(user: User)
+
     @Query("SELECT * FROM user WHERE login = :login")
     fun findByLogin(login: String): LiveData<User>
+
+    @Query("SELECT * FROM user WHERE login = :login")
+    fun findByLoginFlow(login: String): Flow<User>
 }

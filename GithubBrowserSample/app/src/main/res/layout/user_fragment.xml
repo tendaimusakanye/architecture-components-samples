@@ -21,7 +21,7 @@
     <data>
         <import type="com.android.example.github.vo.Status" />
 
-        <import type="com.android.example.github.vo.Resource" />
+        <import type="com.nytimes.android.external.store4.StoreResponse" />
 
         <import type="androidx.lifecycle.LiveData"/>
         <import type="com.android.example.github.vo.User"/>
@@ -32,12 +32,8 @@
             type="com.android.example.github.ui.user.UserFragmentArgs" />
 
         <variable
-            name="userResource"
-            type="com.android.example.github.vo.Resource" />
-
-        <variable
             name="user"
-            type="LiveData&lt;Resource&lt;User>>" />
+            type="StoreResponse&lt;User>" />
 
         <variable
             name="retryCallback"
@@ -65,7 +61,7 @@
 
             <ImageView
                 android:layout_width="@dimen/photo_size"
-                app:imageUrl="@{user.data.avatarUrl ?? args.avatarUrl}"
+                app:imageUrl="@{user.dataOrNull().avatarUrl ?? args.avatarUrl}"
                 app:imageRequestListener="@{imageRequestListener}"
                 app:transitionName="@{args.login}"
                 android:layout_height="@dimen/photo_size"
@@ -77,8 +73,8 @@
                 tools:layout_editor_absoluteX="8dp" />
 
             <TextView
-                app:visibleGone="@{user.data != null}"
-                android:text="@{user.data.name ?? user.data.login}"
+                app:visibleGone="@{user.dataOrNull() != null}"
+                android:text="@{user.dataOrNull().name ?? user.dataOrNull().login}"
                 android:contentDescription="@string/a11y_user_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -107,8 +103,8 @@
             tools:listitem="@layout/repo_item" />
 
         <include
-            layout="@layout/loading_state"
-            app:resource="@{(Resource) user}"
+            layout="@layout/loading_state_store"
+            app:response="@{(StoreResponse) user}"
             app:callback="@{() -> retryCallback.retry()}"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

@@ -77,6 +77,7 @@ dependencies {
     implementation deps.support.core_ktx
     implementation deps.navigation.fragment_ktx
     implementation deps.room.runtime
+    implementation deps.room.ktx
     implementation deps.lifecycle.runtime
     implementation deps.lifecycle.java8
     implementation deps.retrofit.runtime
@@ -88,6 +89,8 @@ dependencies {
     implementation deps.dagger.android_support
     implementation deps.constraint_layout
     implementation deps.kotlin.stdlib
+    implementation deps.store
+    implementation deps.coroutines.android
 
     implementation deps.timber
 

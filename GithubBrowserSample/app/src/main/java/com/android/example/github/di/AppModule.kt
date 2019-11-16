@@ -62,4 +62,5 @@ class AppModule {
     fun provideRepoDao(db: GithubDb): RepoDao {
         return db.repoDao()
     }
+
 }
