@@ -26,14 +26,40 @@ import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
 @Dao
 interface RedditPostDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(posts : List<RedditPost>)
+    fun insert(posts: List<RedditPost>)
 
     @Query("SELECT * FROM posts WHERE subreddit = :subreddit ORDER BY indexInResponse ASC")
-    fun postsBySubreddit(subreddit : String) : DataSource.Factory<Int, RedditPost>
+    fun postsBySubreddit(subreddit: String): DataSource.Factory<Int, RedditPost>
+
+    @Query(
+        """SELECT * FROM posts
+        WHERE subreddit = :subreddit AND indexInResponse >= :indexInResponse AND name NOT IN (:excludes)
+        ORDER BY indexInResponse ASC, name ASC
+        LIMIT :limit"""
+    )
+    suspend fun postsAfter(
+        subreddit: String,
+        indexInResponse: Int,
+        excludes : List<String>,
+        limit: Int
+    ): List<RedditPost>
+
+    @Query(
+        """SELECT * FROM posts
+        WHERE subreddit = :subreddit AND indexInResponse <= :indexInResponse AND name NOT IN (:excludes)
+        ORDER BY indexInResponse DESC, name DESC
+        LIMIT :limit"""
+    )
+    suspend fun postsBefore(
+        subreddit: String,
+        indexInResponse: Int,
+        excludes : List<String>,
+        limit: Int
+    ): List<RedditPost>
 
     @Query("DELETE FROM posts WHERE subreddit = :subreddit")
     fun deleteBySubreddit(subreddit: String)
 
     @Query("SELECT MAX(indexInResponse) + 1 FROM posts WHERE subreddit = :subreddit")
-    fun getNextIndexInSubreddit(subreddit: String) : Int
+    fun getNextIndexInSubreddit(subreddit: String): Int
 }

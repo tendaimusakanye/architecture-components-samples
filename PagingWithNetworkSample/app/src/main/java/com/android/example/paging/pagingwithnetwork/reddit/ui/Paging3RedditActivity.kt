@@ -9,6 +9,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import com.android.example.paging.pagingwithnetwork.GlideApp
 import com.android.example.paging.pagingwithnetwork.R
+import com.android.example.paging.pagingwithnetwork.reddit.ServiceLocator
+import com.android.example.paging.pagingwithnetwork.reddit.repository.Paging3Repository
 import com.android.example.paging.pagingwithnetwork.reddit.repository.paging3.paging3inDb.InMemoryPaging3PostRepository
 import com.android.example.paging.pagingwithnetwork.reddit.ui.paging3.Paging3SubRedditViewModel
 import com.android.example.paging.pagingwithnetwork.reddit.ui.paging3.V3PostsAdapter
@@ -21,7 +23,8 @@ class Paging3RedditActivity : AppCompatActivity() {
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel?> create(modelClass: Class<T>): T {
                 return Paging3SubRedditViewModel(
-                    InMemoryPaging3PostRepository()
+                    ServiceLocator.instance(this@Paging3RedditActivity)
+                        .getV3Repository(Paging3Repository.Type.DB)
                 ) as T
             }
         }

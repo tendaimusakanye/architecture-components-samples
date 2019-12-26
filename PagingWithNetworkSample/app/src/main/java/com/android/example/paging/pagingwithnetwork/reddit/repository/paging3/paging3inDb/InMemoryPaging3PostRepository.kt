@@ -11,8 +11,9 @@ import com.android.example.paging.pagingwithnetwork.reddit.repository.Paging3Rep
 import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
 import kotlinx.coroutines.flow.Flow
 
-class InMemoryPaging3PostRepository : Paging3Repository {
-    private val api = CoroutineRedditApi.create()
+class InMemoryPaging3PostRepository(
+    private val api : CoroutineRedditApi
+) : Paging3Repository {
     override fun postsOfSubreddit(
         subreddit : String,
         pageSize:Int
