@@ -114,26 +114,7 @@ class RedditActivity : AppCompatActivity() {
     }
 
     private fun initSearch() {
-        input.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_GO) {
-                updatedSubredditFromInput()
-                true
-            } else {
-                false
-            }
-        }
-        input.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                updatedSubredditFromInput()
-                true
-            } else {
-                false
-            }
-        }
-    }
-
-    private fun updatedSubredditFromInput() {
-        input.text.trim().toString().let {
+        input.setAsSearch {
             if (it.isNotEmpty()) {
                 if (model.showSubreddit(it)) {
                     list.scrollToPosition(0)
@@ -142,4 +123,5 @@ class RedditActivity : AppCompatActivity() {
             }
         }
     }
+
 }

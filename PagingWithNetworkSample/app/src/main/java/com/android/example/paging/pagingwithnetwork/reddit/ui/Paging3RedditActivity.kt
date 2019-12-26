@@ -13,6 +13,7 @@ import com.android.example.paging.pagingwithnetwork.reddit.ui.paging3.Paging3Sub
 import com.android.example.paging.pagingwithnetwork.reddit.ui.paging3.V3PostsAdapter
 import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.activity_reddit.*
+import kotlinx.coroutines.flow.flowOf
 
 class Paging3RedditActivity : AppCompatActivity() {
     private val viewModel by viewModels<Paging3SubRedditViewModel> {
@@ -27,8 +28,20 @@ class Paging3RedditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_reddit)
-        initAdapter()
         viewModel.setSubredditName("androiddev")
+        initSearch()
+        initAdapter()
+
+
+    }
+
+    private fun initSearch() {
+        input.setAsSearch {
+            if (it.isNotBlank()) {
+                viewModel.setSubredditName(it)
+                list.scrollToPosition(0)
+            }
+        }
     }
 
     fun initAdapter() {
