@@ -30,9 +30,9 @@ dependencies {
     implementation deps.support.recyclerview
     implementation deps.support.cardview
     implementation deps.support.design
-    implementation deps.room.runtime
+    implementation deps.room.ktx
     implementation deps.lifecycle.runtime
-    implementation deps.paging_ktx
+    implementation deps.paging3_ktx
     implementation deps.kotlin.stdlib
     implementation deps.retrofit.runtime
     implementation deps.retrofit.gson

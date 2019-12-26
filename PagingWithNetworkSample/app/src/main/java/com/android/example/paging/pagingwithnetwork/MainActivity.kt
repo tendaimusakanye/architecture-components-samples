@@ -16,9 +16,11 @@
 
 package com.android.example.paging.pagingwithnetwork
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.android.example.paging.pagingwithnetwork.reddit.repository.RedditPostRepository
+import com.android.example.paging.pagingwithnetwork.reddit.ui.Paging3RedditActivity
 import com.android.example.paging.pagingwithnetwork.reddit.ui.RedditActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -38,6 +40,9 @@ class MainActivity : AppCompatActivity() {
         }
         networkOnlyWithPageKeys.setOnClickListener {
             show(RedditPostRepository.Type.IN_MEMORY_BY_PAGE)
+        }
+        paging3.setOnClickListener {
+            startActivity(Intent(this, Paging3RedditActivity::class.java))
         }
     }
 

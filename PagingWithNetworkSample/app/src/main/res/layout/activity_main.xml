@@ -35,4 +35,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/network_only_by_page"/>
+    <Button android:id="@+id/paging3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/paging_3"/>
 </LinearLayout>
