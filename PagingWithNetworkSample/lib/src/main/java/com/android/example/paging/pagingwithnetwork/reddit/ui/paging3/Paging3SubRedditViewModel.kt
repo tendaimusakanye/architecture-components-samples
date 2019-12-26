@@ -18,9 +18,17 @@ class Paging3SubRedditViewModel(
     private val subredditName = ConflatedBroadcastChannel<String>()
 
     fun setSubredditName(name : String) {
-        subredditName.offer(name.trim())
+        if (subredditName.valueOrNull != name) {
+            subredditName.offer(name.trim())
+        }
     }
-    val flow = subredditName.asFlow().distinctUntilChanged()
+    fun refresh() {
+        subredditName.valueOrNull?.let {
+            subredditName.offer(it)
+        }
+    }
+    val flow = subredditName
+        .asFlow()
         .flatMapLatest {
             repo.postsOfSubreddit(it, 10)
         }

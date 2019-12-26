@@ -6,6 +6,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.paging.LoadState
 import com.android.example.paging.pagingwithnetwork.GlideApp
 import com.android.example.paging.pagingwithnetwork.R
 import com.android.example.paging.pagingwithnetwork.reddit.repository.paging3.paging3inDb.InMemoryPaging3PostRepository
@@ -31,8 +32,6 @@ class Paging3RedditActivity : AppCompatActivity() {
         viewModel.setSubredditName("androiddev")
         initSearch()
         initAdapter()
-
-
     }
 
     private fun initSearch() {
@@ -46,7 +45,12 @@ class Paging3RedditActivity : AppCompatActivity() {
 
     fun initAdapter() {
         val glide = GlideApp.with(this)
-        val adapter = V3PostsAdapter(glide = glide)
+        val adapter = V3PostsAdapter(glide = glide) {refreshing ->
+            swipe_refresh.isRefreshing = refreshing == LoadState.Loading
+        }
+        swipe_refresh.setOnRefreshListener {
+            viewModel.refresh()
+        }
         list.adapter = adapter
         adapter.connect(viewModel.flow, lifecycleScope)
     }

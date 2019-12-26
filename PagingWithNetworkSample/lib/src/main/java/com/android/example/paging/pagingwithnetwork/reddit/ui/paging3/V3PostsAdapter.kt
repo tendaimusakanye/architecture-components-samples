@@ -1,7 +1,8 @@
 package com.android.example.paging.pagingwithnetwork.reddit.ui.paging3
 
 import android.view.ViewGroup
-import androidx.paging.PagedData
+import androidx.paging.LoadState
+import androidx.paging.LoadType
 import androidx.paging.PagedDataAdapter
 import com.android.example.paging.pagingwithnetwork.GlideRequests
 import com.android.example.paging.pagingwithnetwork.reddit.ui.PostsAdapter.Companion.POST_COMPARATOR
@@ -9,7 +10,8 @@ import com.android.example.paging.pagingwithnetwork.reddit.ui.RedditPostViewHold
 import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
 
 class V3PostsAdapter(
-    private val glide: GlideRequests
+    private val glide: GlideRequests,
+    private val refreshStateCallback: (LoadState) -> Unit
 ) : PagedDataAdapter<RedditPost, RedditPostViewHolder>(
     diffCallback = POST_COMPARATOR
 ) {
@@ -19,5 +21,11 @@ class V3PostsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RedditPostViewHolder {
         return RedditPostViewHolder.create(parent, glide)
+    }
+
+    override fun onLoadStateChanged(type: LoadType, state: LoadState) {
+        if (type == LoadType.REFRESH) {
+            refreshStateCallback(state)
+        }
     }
 }
