@@ -16,7 +16,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import java.lang.StringBuilder
 
 class DbPaging3PostRepository(
     private val fetchScope: CoroutineScope = GlobalScope,
@@ -30,7 +29,7 @@ class DbPaging3PostRepository(
                 SubredditPagedSource(
                     fetchScope = fetchScope,
                     db = db,
-                    api = FakeApi(counter ++ ),
+                    api = FakeApi(counter++),
                     subreddit = subreddit
                 )
             },
@@ -114,38 +113,43 @@ class DbPaging3PostRepository(
 
         private fun fetchAfterAsync(key: String, limit: Int) {
             fetchScope.launch {
-                val response = api.getTopAfter(
-                    subreddit = subreddit,
-                    after = key,
-                    limit = limit
-                )
-                val posts = db.withTransaction {
-                    val offset = db.posts().getNextIndexInSubreddit(subreddit)
-                    val posts = response.data.children.mapIndexed { index, item ->
-                        item.data.also {
-                            it.indexInResponse = index + offset
+                kotlin.runCatching {
+                    val response = api.getTopAfter(
+                        subreddit = subreddit,
+                        after = key,
+                        limit = limit
+                    )
+                    val posts = db.withTransaction {
+                        val offset = db.posts().getNextIndexInSubreddit(subreddit)
+                        val posts = response.data.children.mapIndexed { index, item ->
+                            item.data.also {
+                                it.indexInResponse = index + offset
+                            }
                         }
+                        db.posts().insert(posts)
+                        posts
                     }
-                    db.posts().insert(posts)
-                    posts
+                    if (posts.isNotEmpty()) {
+                        invalidate()
+                    }
                 }
-                if (posts.isNotEmpty()) {
-                    invalidate()
-                }
+
             }
         }
 
         suspend fun fetchTop(limit: Int) {
-            val response = api.getTop(
-                subreddit = subreddit,
-                limit = limit
-            )
-            db.withTransaction {
-                db.posts().deleteBySubreddit(subreddit)
-                db.posts().insert(response.data.children.mapIndexed { index, item ->
-                    item.data.indexInResponse = index
-                    item.data
-                })
+            kotlin.runCatching {
+                val response = api.getTop(
+                    subreddit = subreddit,
+                    limit = limit
+                )
+                db.withTransaction {
+                    db.posts().deleteBySubreddit(subreddit)
+                    db.posts().insert(response.data.children.mapIndexed { index, item ->
+                        item.data.indexInResponse = index
+                        item.data
+                    })
+                }
             }
         }
 

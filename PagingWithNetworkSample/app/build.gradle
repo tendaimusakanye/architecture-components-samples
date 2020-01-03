@@ -70,6 +70,7 @@ dependencies {
     implementation deps.support.design
     implementation deps.room.ktx
     implementation deps.lifecycle.runtime
+    implementation deps.lifecycle.viewmodel_ktx
     implementation deps.paging3_ktx
     implementation deps.kotlin.stdlib
     implementation deps.retrofit.runtime

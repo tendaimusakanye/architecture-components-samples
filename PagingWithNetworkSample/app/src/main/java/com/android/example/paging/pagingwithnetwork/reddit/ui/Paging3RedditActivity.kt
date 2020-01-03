@@ -32,7 +32,9 @@ class Paging3RedditActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_reddit)
-        viewModel.setSubredditName("androiddev")
+        if (savedInstanceState == null) {
+            viewModel.setSubredditName("androiddev")
+        }
         initSearch()
         initAdapter()
     }

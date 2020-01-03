@@ -25,7 +25,7 @@ class V3PostsAdapter(
 
     override fun onLoadStateChanged(type: LoadType, state: LoadState) {
         if (type == LoadType.REFRESH) {
-            refreshStateCallback(state)
+            refreshStateCallback?.invoke(state)
         }
     }
 }
