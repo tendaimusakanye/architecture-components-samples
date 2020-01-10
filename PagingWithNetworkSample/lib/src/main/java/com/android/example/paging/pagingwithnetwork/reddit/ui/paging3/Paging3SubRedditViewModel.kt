@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import com.android.example.paging.pagingwithnetwork.reddit.repository.Paging3Repository
+import com.android.example.paging.pagingwithnetwork.reddit.repository.SubredditQuery
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
@@ -15,17 +16,27 @@ import kotlinx.coroutines.flow.flatMapLatest
 class Paging3SubRedditViewModel(
     private val repo: Paging3Repository
 ) : ViewModel() {
-    private val subredditName = ConflatedBroadcastChannel<String>()
+    private val subredditName = ConflatedBroadcastChannel<SubredditQuery>()
 
     fun setSubredditName(name: String) {
-        if (subredditName.valueOrNull != name) {
-            subredditName.offer(name.trim())
+        val current = subredditName.valueOrNull
+        if (current?.query != name) {
+            subredditName.offer(
+                SubredditQuery(
+                    query = name,
+                    forceRefresh = false
+                )
+            )
         }
     }
 
     fun refresh() {
         subredditName.valueOrNull?.let {
-            subredditName.offer(it)
+            subredditName.offer(
+                it.copy(
+                    forceRefresh = true
+                )
+            )
         }
     }
 

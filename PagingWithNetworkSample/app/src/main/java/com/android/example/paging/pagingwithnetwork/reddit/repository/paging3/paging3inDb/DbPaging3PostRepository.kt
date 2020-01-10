@@ -10,11 +10,13 @@ import com.android.example.paging.pagingwithnetwork.reddit.api.CoroutineRedditAp
 import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
 import com.android.example.paging.pagingwithnetwork.reddit.db.RedditDb
 import com.android.example.paging.pagingwithnetwork.reddit.repository.Paging3Repository
+import com.android.example.paging.pagingwithnetwork.reddit.repository.SubredditQuery
 import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import java.util.concurrent.atomic.AtomicBoolean
 
 class DbPaging3PostRepository(
     private val fetchScope: CoroutineScope = GlobalScope,
@@ -22,14 +24,21 @@ class DbPaging3PostRepository(
     private val db: RedditDb
 ) : Paging3Repository {
     var counter = 0
-    override fun postsOfSubreddit(subreddit: String, pageSize: Int): Flow<PagedData<RedditPost>> {
+    override fun postsOfSubreddit(
+        query: SubredditQuery,
+        pageSize: Int
+    ): Flow<PagedData<RedditPost>> {
+        // shared variable across mutliple paged sources
+        // is ugly but does the work for now
+        val shouldRefresh = AtomicBoolean(query.forceRefresh)
         return PagedDataFlowBuilder(
             pagedSourceFactory = {
                 SubredditPagedSource(
                     fetchScope = fetchScope,
                     db = db,
                     api = FakeApi(counter++),
-                    subreddit = subreddit
+                    subreddit = query.query,
+                    shouldRefresh = shouldRefresh
                 )
             },
             config = PagingConfig.Builder(pageSize).apply {
@@ -42,7 +51,8 @@ class DbPaging3PostRepository(
         private val api: CoroutineRedditApi,
         private val fetchScope: CoroutineScope,
         private val db: RedditDb,
-        private val subreddit: String
+        private val subreddit: String,
+        private val shouldRefresh : AtomicBoolean
     ) : PagedSource<SubredditPagedSource.PageKey, RedditPost>() {
         override fun getRefreshKeyFromPage(
             indexInPage: Int,
@@ -54,12 +64,16 @@ class DbPaging3PostRepository(
         override suspend fun load(params: LoadParams<PageKey>): LoadResult<PageKey, RedditPost> {
             return when (params.loadType) {
                 LoadType.REFRESH -> {
-                    var posts = db.posts().postsAfter(
-                        subreddit = subreddit,
-                        indexInResponse = params.key?.indexInResponse ?: -1,
-                        excludes = emptyList(),
-                        limit = params.loadSize
-                    )
+                    var posts = if (shouldRefresh.get()) {
+                        emptyList()
+                    } else {
+                        db.posts().postsAfter(
+                            subreddit = subreddit,
+                            indexInResponse = params.key?.indexInResponse ?: -1,
+                            excludes = emptyList(),
+                            limit = params.loadSize
+                        )
+                    }
                     if (posts.isNotEmpty()) {
                         LoadResult.Page(
                             data = posts,
@@ -83,7 +97,7 @@ class DbPaging3PostRepository(
                                 prevKey = posts.firstOrNull()?.toPageKey(),
                                 nextKey = posts.lastOrNull()?.toPageKey()
                             )
-                        } catch (error : Throwable) {
+                        } catch (error: Throwable) {
                             LoadResult.Error<PageKey, RedditPost>(
                                 throwable = error
                             )
@@ -179,6 +193,7 @@ class DbPaging3PostRepository(
                 subreddit = subreddit,
                 limit = limit
             )
+            shouldRefresh.set(false)
             db.withTransaction {
                 db.posts().deleteBySubreddit(subreddit)
                 db.posts().insert(response.data.children.mapIndexed { index, item ->

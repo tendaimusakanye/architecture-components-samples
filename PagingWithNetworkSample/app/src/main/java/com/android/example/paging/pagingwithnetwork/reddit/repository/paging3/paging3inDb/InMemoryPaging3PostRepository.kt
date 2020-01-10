@@ -9,6 +9,7 @@ import androidx.paging.PagingConfig
 import com.android.example.paging.pagingwithnetwork.reddit.api.CoroutineRedditApi
 import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
 import com.android.example.paging.pagingwithnetwork.reddit.repository.Paging3Repository
+import com.android.example.paging.pagingwithnetwork.reddit.repository.SubredditQuery
 import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
 import kotlinx.coroutines.flow.Flow
 
@@ -16,14 +17,14 @@ class InMemoryPaging3PostRepository(
     private val api : CoroutineRedditApi
 ) : Paging3Repository {
     override fun postsOfSubreddit(
-        subreddit : String,
+        subreddit : SubredditQuery,
         pageSize:Int
     ) : Flow<PagedData<RedditPost>> {
         return PagedDataFlowBuilder(
             pagedSourceFactory = {
                 SubredditPagedSource(
                     api = api,
-                    subreddit = subreddit
+                    subreddit = subreddit.query
                 )
             },
             config = PagingConfig.Builder(pageSize).apply {
