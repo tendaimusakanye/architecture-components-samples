@@ -3,8 +3,8 @@ package com.android.example.paging.pagingwithnetwork.reddit.repository.paging3.p
 import androidx.paging.LoadType
 import androidx.paging.PagedData
 import androidx.paging.PagedDataFlowBuilder
-import androidx.paging.PagedList
 import androidx.paging.PagedSource
+import androidx.paging.PagingConfig
 import androidx.room.withTransaction
 import com.android.example.paging.pagingwithnetwork.reddit.api.CoroutineRedditApi
 import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.launch
 
 class DbPaging3PostRepository(
     private val fetchScope: CoroutineScope = GlobalScope,
@@ -33,9 +32,8 @@ class DbPaging3PostRepository(
                     subreddit = subreddit
                 )
             },
-            config = PagedList.Config.Builder().apply {
+            config = PagingConfig.Builder(pageSize).apply {
                 setEnablePlaceholders(false)
-                setPageSize(pageSize)
             }.build()
         ).build()
     }
@@ -62,22 +60,35 @@ class DbPaging3PostRepository(
                         excludes = emptyList(),
                         limit = params.loadSize
                     )
-                    if (posts.isEmpty()) {
-                        // nothing in disk, fetch sync
-                        fetchTop(params.loadSize)
-                        // fetch again
-                        posts = db.posts().postsAfter(
-                            subreddit = subreddit,
-                            indexInResponse = params.key?.indexInResponse ?: -1,
-                            excludes = emptyList(),
-                            limit = params.loadSize
+                    if (posts.isNotEmpty()) {
+                        LoadResult.Page(
+                            data = posts,
+                            prevKey = posts.firstOrNull()?.toPageKey(),
+                            nextKey = posts.lastOrNull()?.toPageKey()
                         )
+                    } else {
+                        // nothing in disk, fetch sync
+                        try {
+                            val fetchedItems = fetchTop(params.loadSize)
+                            if (fetchedItems > 0) {
+                                posts = db.posts().postsAfter(
+                                    subreddit = subreddit,
+                                    indexInResponse = params.key?.indexInResponse ?: -1,
+                                    excludes = emptyList(),
+                                    limit = params.loadSize
+                                )
+                            }
+                            LoadResult.Page(
+                                data = posts,
+                                prevKey = posts.firstOrNull()?.toPageKey(),
+                                nextKey = posts.lastOrNull()?.toPageKey()
+                            )
+                        } catch (error : Throwable) {
+                            LoadResult.Error<PageKey, RedditPost>(
+                                throwable = error
+                            )
+                        }
                     }
-                    LoadResult.Page(
-                        data = posts,
-                        prevKey = posts.firstOrNull()?.toPageKey(),
-                        nextKey = posts.lastOrNull()?.toPageKey()
-                    )
                 }
                 LoadType.START -> {
                     val posts = db.posts().postsBefore(
@@ -99,58 +110,83 @@ class DbPaging3PostRepository(
                         excludes = listOf(params.key?.name ?: ""),
                         limit = params.loadSize
                     )
-                    if (posts.isEmpty()) {
-                        fetchAfterAsync(params.key!!.name, params.loadSize)
-                    }
-                    LoadResult.Page(
-                        data = posts,
-                        prevKey = posts.firstOrNull()?.toPageKey(),
-                        nextKey = posts.lastOrNull()?.toPageKey()
-                    )
-                }
-            }
-        }
+                    return if (posts.isNotEmpty()) {
+                        LoadResult.Page(
+                            data = posts,
+                            prevKey = posts.firstOrNull()?.toPageKey(),
+                            nextKey = posts.lastOrNull()?.toPageKey()
+                        )
+                    } else {
+                        val fetchResult = kotlin.runCatching {
+                            fetchAfter(params.key!!.name, params.loadSize)
+                        }
+                        if (fetchResult.isFailure) {
+                            LoadResult.Error(
+                                throwable = requireNotNull(fetchResult.exceptionOrNull())
+                            )
+                        } else {
+                            // reload
+                            val itemsLoaded = fetchResult.getOrDefault(0)
+                            if (itemsLoaded > 0) {
+                                // reload
+                                val reloaded = db.posts().postsAfter(
+                                    subreddit = subreddit,
+                                    indexInResponse = params.key!!.indexInResponse,
+                                    excludes = listOf(params.key?.name ?: ""),
+                                    limit = params.loadSize
+                                )
+                                LoadResult.Page(
+                                    data = reloaded,
+                                    prevKey = reloaded.firstOrNull()?.toPageKey(),
+                                    nextKey = reloaded.lastOrNull()?.toPageKey()
+                                )
+                            } else {
+                                // end of list
+                                LoadResult.Page<PageKey, RedditPost>(
+                                    data = emptyList(),
+                                    prevKey = null,
+                                    nextKey = null
+                                )
 
-        private fun fetchAfterAsync(key: String, limit: Int) {
-            fetchScope.launch {
-                kotlin.runCatching {
-                    val response = api.getTopAfter(
-                        subreddit = subreddit,
-                        after = key,
-                        limit = limit
-                    )
-                    val posts = db.withTransaction {
-                        val offset = db.posts().getNextIndexInSubreddit(subreddit)
-                        val posts = response.data.children.mapIndexed { index, item ->
-                            item.data.also {
-                                it.indexInResponse = index + offset
                             }
                         }
-                        db.posts().insert(posts)
-                        posts
-                    }
-                    if (posts.isNotEmpty()) {
-                        invalidate()
                     }
                 }
-
             }
         }
 
-        suspend fun fetchTop(limit: Int) {
-            kotlin.runCatching {
-                val response = api.getTop(
-                    subreddit = subreddit,
-                    limit = limit
-                )
-                db.withTransaction {
-                    db.posts().deleteBySubreddit(subreddit)
-                    db.posts().insert(response.data.children.mapIndexed { index, item ->
-                        item.data.indexInResponse = index
-                        item.data
-                    })
+        private suspend fun fetchAfter(key: String, limit: Int): Int {
+            val response = api.getTopAfter(
+                subreddit = subreddit,
+                after = key,
+                limit = limit
+            )
+            val posts = db.withTransaction {
+                val offset = db.posts().getNextIndexInSubreddit(subreddit)
+                val posts = response.data.children.mapIndexed { index, item ->
+                    item.data.also {
+                        it.indexInResponse = index + offset
+                    }
                 }
+                db.posts().insert(posts)
+                posts
             }
+            return posts.size
+        }
+
+        suspend fun fetchTop(limit: Int): Int {
+            val response = api.getTop(
+                subreddit = subreddit,
+                limit = limit
+            )
+            db.withTransaction {
+                db.posts().deleteBySubreddit(subreddit)
+                db.posts().insert(response.data.children.mapIndexed { index, item ->
+                    item.data.indexInResponse = index
+                    item.data
+                })
+            }
+            return response.data.children.size
         }
 
         fun RedditPost.toPageKey() = PageKey(
@@ -159,16 +195,15 @@ class DbPaging3PostRepository(
         )
 
         data class PageKey(
-            val name : String,
-            val indexInResponse : Int
+            val name: String,
+            val indexInResponse: Int
         )
     }
 
 
-
-    class FakeApi(val id : Int) : CoroutineRedditApi {
+    class FakeApi(val id: Int) : CoroutineRedditApi {
         override suspend fun getTop(subreddit: String, limit: Int): RedditApi.ListingResponse {
-            delay(1_000)
+            delay(5_000)
             val children = fakeRedditPosts(
                 subreddit = subreddit,
                 start = "aaaaaa",
@@ -188,7 +223,7 @@ class DbPaging3PostRepository(
             after: String,
             limit: Int
         ): RedditApi.ListingResponse {
-            delay(1_000)
+            delay(5_000)
             val children = fakeRedditPosts(
                 subreddit = subreddit,
                 start = after.inc(),
@@ -213,7 +248,7 @@ class DbPaging3PostRepository(
 
         private fun fakeRedditPost(
             subreddit: String,
-            name : String
+            name: String
         ) = RedditPost(
             name = name,
             title = name + " " + id,
@@ -228,16 +263,18 @@ class DbPaging3PostRepository(
 
         fun fakeRedditPosts(
             subreddit: String,
-            start : String,
-            limit : Int
-        ) : List<RedditApi.RedditChildrenResponse> {
+            start: String,
+            limit: Int
+        ): List<RedditApi.RedditChildrenResponse> {
             var word = start
             val list = mutableListOf<RedditPost>()
             repeat(limit) {
-                list.add(fakeRedditPost(
-                    subreddit = subreddit,
-                    name = word
-                ))
+                list.add(
+                    fakeRedditPost(
+                        subreddit = subreddit,
+                        name = word
+                    )
+                )
                 word = word.inc()
             }
             return list.map {
@@ -247,7 +284,7 @@ class DbPaging3PostRepository(
             }
         }
 
-        fun String.inc() : String {
+        fun String.inc(): String {
             var carry = true
             return this.reversed().map {
                 if (!carry) {
@@ -263,7 +300,7 @@ class DbPaging3PostRepository(
             }.reversed().joinToString("")
         }
 
-        fun String.dec() : String? {
+        fun String.dec(): String? {
             var carry = true
             val reversed = this.reversed().map {
                 if (!carry) {
@@ -278,7 +315,7 @@ class DbPaging3PostRepository(
                 }
             }.reversed().joinToString("")
             if (carry) {
-                return  null
+                return null
             }
             return reversed
         }

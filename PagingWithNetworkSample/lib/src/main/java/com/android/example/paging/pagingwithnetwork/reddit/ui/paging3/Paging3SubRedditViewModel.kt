@@ -11,14 +11,13 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapLatest
 
 @FlowPreview
-@ExperimentalCoroutinesApi
+@UseExperimental(ExperimentalCoroutinesApi::class)
 class Paging3SubRedditViewModel(
     private val repo: Paging3Repository
 ) : ViewModel() {
     private val subredditName = ConflatedBroadcastChannel<String>()
 
     fun setSubredditName(name: String) {
-
         if (subredditName.valueOrNull != name) {
             subredditName.offer(name.trim())
         }

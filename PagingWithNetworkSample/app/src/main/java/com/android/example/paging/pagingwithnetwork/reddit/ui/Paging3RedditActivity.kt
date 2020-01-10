@@ -2,11 +2,13 @@ package com.android.example.paging.pagingwithnetwork.reddit.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
+import androidx.paging.LoadType
 import com.android.example.paging.pagingwithnetwork.GlideApp
 import com.android.example.paging.pagingwithnetwork.R
 import com.android.example.paging.pagingwithnetwork.reddit.ServiceLocator
@@ -15,6 +17,7 @@ import com.android.example.paging.pagingwithnetwork.reddit.repository.paging3.pa
 import com.android.example.paging.pagingwithnetwork.reddit.ui.paging3.Paging3SubRedditViewModel
 import com.android.example.paging.pagingwithnetwork.reddit.ui.paging3.V3PostsAdapter
 import com.bumptech.glide.Glide
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_reddit.*
 import kotlinx.coroutines.flow.flowOf
 
@@ -50,13 +53,29 @@ class Paging3RedditActivity : AppCompatActivity() {
 
     fun initAdapter() {
         val glide = GlideApp.with(this)
-        val adapter = V3PostsAdapter(glide = glide) {refreshing ->
-            swipe_refresh.isRefreshing = refreshing == LoadState.Loading
+        val adapter = V3PostsAdapter(glide = glide)
+        adapter.addLoadStateListener { loadType, loadState ->
+            if (loadType == LoadType.REFRESH) {
+                swipe_refresh.isRefreshing = loadState == LoadState.Loading
+            }
+            if (loadState is LoadState.Error) {
+                showError(loadState)
+            }
+
         }
         swipe_refresh.setOnRefreshListener {
             viewModel.refresh()
         }
         list.adapter = adapter
         adapter.connect(viewModel.flow, lifecycleScope)
+    }
+
+    private fun showError(loadState: LoadState.Error) {
+        Snackbar.make(root, loadState.error.message ?: "Unknown Error", Snackbar.LENGTH_LONG).also {
+            it.setAction("refresh") {
+                viewModel.refresh()
+            }
+            it.show()
+        }
     }
 }

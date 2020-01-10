@@ -5,6 +5,7 @@ import androidx.paging.PagedData
 import androidx.paging.PagedDataFlowBuilder
 import androidx.paging.PagedList
 import androidx.paging.PagedSource
+import androidx.paging.PagingConfig
 import com.android.example.paging.pagingwithnetwork.reddit.api.CoroutineRedditApi
 import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
 import com.android.example.paging.pagingwithnetwork.reddit.repository.Paging3Repository
@@ -25,9 +26,8 @@ class InMemoryPaging3PostRepository(
                     subreddit = subreddit
                 )
             },
-            config = PagedList.Config.Builder().apply {
+            config = PagingConfig.Builder(pageSize).apply {
                 setEnablePlaceholders(false)
-                setPageSize(pageSize)
             }.build()
         ).build()
     }

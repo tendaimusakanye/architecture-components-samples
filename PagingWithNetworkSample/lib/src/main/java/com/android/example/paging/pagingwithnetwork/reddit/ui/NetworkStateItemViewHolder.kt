@@ -23,10 +23,12 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.paging.LoadState
 import com.android.example.paging.pagingwithnetwork.reddit.repository.NetworkState
 import com.android.example.paging.pagingwithnetwork.reddit.repository.Status.FAILED
 import com.android.example.paging.pagingwithnetwork.reddit.repository.Status.RUNNING
 import com.android.example.lib.R
+import java.lang.Error
 
 /**
  * A View Holder that can display a loading or have click action.
@@ -43,6 +45,15 @@ class NetworkStateItemViewHolder(view: View,
             retryCallback()
         }
     }
+
+    fun bindTo(loadState : LoadState) {
+        progressBar.visibility = toVisibility(loadState is LoadState.Loading)
+        retry.visibility = toVisibility(loadState is LoadState.Error)
+        val err = (loadState as? LoadState.Error)?.error?.message
+        errorMsg.visibility = toVisibility(err != null)
+        errorMsg.text = err
+    }
+
     fun bindTo(networkState: NetworkState?) {
         progressBar.visibility = toVisibility(networkState?.status == RUNNING)
         retry.visibility = toVisibility(networkState?.status == FAILED)

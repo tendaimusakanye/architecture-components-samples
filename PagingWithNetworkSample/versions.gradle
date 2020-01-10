@@ -195,6 +195,6 @@ def addRepos(RepositoryHandler handler) {
     handler.jcenter()
     handler.maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     handler.maven { url '/home/yboyar/src/yigit-architecture-components-sampels/repo/m2repository'}
-    handler.maven { url 'https://ci.android.com/builds/submitted/6109777/androidx_snapshot/latest/repository'}
+    handler.maven { url 'https://ci.android.com/builds/submitted/6122926/androidx_snapshot/latest/repository/'}
 }
 ext.addRepos = this.&addRepos
